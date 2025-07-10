@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+
 class SessionMemory:
     def __init__(self):
         self.memory = defaultdict(list)
@@ -13,5 +14,6 @@ class SessionMemory:
 
     def clear(self, user_id):
         self.memory[user_id] = []
+
 
 session_memory = SessionMemory()

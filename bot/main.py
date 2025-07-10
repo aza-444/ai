@@ -12,10 +12,6 @@ from bot.dispatcher import dp, on_startup, on_shutdown, handle_message
 from utils.utils import Config
 
 
-
-
-
-
 async def main(bot: Bot) -> None:
     dp.message()(handle_message)
     dp.startup.register(on_startup)

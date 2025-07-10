@@ -15,6 +15,7 @@ async def on_shutdown(bot: Bot):
     await bot.send_message(chat_id=os.getenv("USER_ID"), text="Bot To'xtadi ⚠️")
     await bot.session.close()
 
+
 async def handle_message(message: types.Message):
     user_id = str(message.from_user.id)
     allowed_users = os.getenv("USER_ID", "").split(",")
@@ -26,12 +27,12 @@ async def handle_message(message: types.Message):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "http://localhost:8000/chat",
+                os.getenv("API_URL"),
                 json={"user_id": user_id, "message": message.text},
                 timeout=60
             )
             if response.status_code == 200:
-                data =  response.json()
+                data = response.json()
                 reply = data.get("response", "Bo‘sh javob.")
             else:
                 reply = f"Server xatoligi: {response.status_code}"
