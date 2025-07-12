@@ -1,6 +1,9 @@
+from loguru import logger
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import os
+
+from app.memory import SessionMemory, session_memory
 
 load_dotenv()
 
@@ -23,16 +26,25 @@ async def chat_with_ai(user_id: str, user_message: str):
         return "Xatolik yuz berdi: " + str(e)
 
 
-
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-async def chat_with_ai_async(user_id: str, user_message: str):
+
+async def chat_with_ai_async(user_id: str, user_message: str) -> str:
     try:
-        messages = [{"role": "user", "content": user_message}]
+        session_memory.add(user_id, "user", user_message)
+        messages = session_memory.get(user_id)[-4:]
+
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=messages
+            messages=messages,
+            temperature=0.6
         )
-        return response.choices[0].message.content
+
+        ai_reply = response.choices[0].message.content.strip()
+        session_memory.add(user_id, "assistant", ai_reply)
+
+        return ai_reply
+
     except Exception as e:
-        return "Xatolik yuz berdi: " + str(e)
+        logger.info(f"{user_id} uchun yuborilayotgan messages: {messages}")
+        return f"❌ Xatolik yuz berdi: {str(e)}"

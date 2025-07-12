@@ -11,15 +11,10 @@ class MessageIn(BaseModel):
     user_id: str
     message: str
 
-
 @app.post("/chat")
-async def chat(request: Request):
-    data = await request.json()
-    message = data.get("message")
-    user_id = data.get("user_id")
-    response = await chat_with_ai_async(user_id, message)
+async def chat(msg: MessageIn):
+    response = await chat_with_ai_async(msg.user_id, msg.message)
     return {"reply": response}
-
 
 @app.post("/reset")
 def reset(msg: MessageIn):
