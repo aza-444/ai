@@ -1,3 +1,3 @@
-lint:
-	black --check .
-	isort --check .
+sort:
+	isort  .
+	black  .
