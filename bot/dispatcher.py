@@ -1,8 +1,8 @@
 import asyncio
 import os
-
 import httpx
 from aiogram import Bot, Dispatcher, types
+from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
 from aiogram.types import Message
 from dotenv import load_dotenv
@@ -37,10 +37,12 @@ async def on_shutdown(bot: Bot):
 
 logger.add("chat.log", rotation="1 day", retention="7 days", level="TRACE")
 
+
 async def handle_message(message: types.Message):
     logger.info(f"{message.from_user.id} -> {message.text}")
     user_id = str(message.from_user.id)
-    allowed_users = os.getenv("ALLOWED_USERS")
+
+    allowed_users = os.getenv("ALLOWED_USERS", "")
 
     if user_id not in allowed_users:
         await message.reply("🚫 Sizga ruxsat yo‘q.")
@@ -50,7 +52,7 @@ async def handle_message(message: types.Message):
     sent = await message.answer("🔄 Javob yozilmoqda...")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=600) as client:
             response = await client.post(
                 os.getenv("API_URL"),
                 json={"user_id": user_id, "message": message.text}
@@ -74,18 +76,6 @@ async def handle_message(message: types.Message):
     except Exception as e:
         full_reply = f"❌ Noma’lum xatolik: {e}"
 
-    if "\n" in full_reply or len(full_reply.split()) > 200:
-        try:
-            await message.bot.edit_message_text(
-                chat_id=sent.chat.id,
-                message_id=sent.message_id,
-                text=full_reply,
-                parse_mode="Markdown"
-            )
-        except (TelegramRetryAfter, TelegramBadRequest):
-            pass
-        return
-
     sozlar = full_reply.split()
     soz_uzunligi = 10
     oxirgi_soz = ""
@@ -95,44 +85,31 @@ async def handle_message(message: types.Message):
         chashka.append(word)
         if i % soz_uzunligi == 0 or i == len(sozlar):
             candidate = " ".join(chashka)
-            if candidate != oxirgi_soz:
-                oxirgi_soz += candidate
-                try:
-                    await asyncio.sleep(0.5)
-                    await message.bot.edit_message_text(
-                        chat_id=sent.chat.id,
-                        message_id=sent.message_id,
-                        text=oxirgi_soz,
-                        parse_mode="Markdown"
-                    )
-                except TelegramRetryAfter as e:
-                    await asyncio.sleep(e.retry_after)
-                    await message.bot.edit_message_text(
-                        chat_id=sent.chat.id,
-                        message_id=sent.message_id,
-                        text=oxirgi_soz,
-                        parse_mode="Markdown"
-                    )
-                except TelegramBadRequest:
-                    pass
+            oxirgi_soz += candidate + " "
+            try:
+                await asyncio.sleep(0.1)
+                await message.bot.edit_message_text(
+                    chat_id=sent.chat.id,
+                    message_id=sent.message_id,
+                    text=oxirgi_soz.strip(),
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            except TelegramRetryAfter as e:
+                await asyncio.sleep(e.retry_after)
+            except TelegramBadRequest:
+                pass
             chashka = []
 
-    if oxirgi_soz != full_reply:
+    if oxirgi_soz.strip() != full_reply.strip():
         try:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
             await message.bot.edit_message_text(
                 chat_id=sent.chat.id,
                 message_id=sent.message_id,
                 text=full_reply,
-                parse_mode="Markdown"
+                parse_mode=ParseMode.MARKDOWN
             )
         except TelegramRetryAfter as e:
             await asyncio.sleep(e.retry_after)
-            await message.bot.edit_message_text(
-                chat_id=sent.chat.id,
-                message_id=sent.message_id,
-                text=full_reply,
-                parse_mode="Markdown"
-            )
         except TelegramBadRequest:
             pass
