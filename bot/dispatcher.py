@@ -1,5 +1,6 @@
 import asyncio
 import os
+
 import httpx
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
@@ -54,8 +55,7 @@ async def handle_message(message: types.Message):
     try:
         async with httpx.AsyncClient(timeout=600) as client:
             response = await client.post(
-                os.getenv("API_URL"),
-                json={"user_id": user_id, "message": message.text}
+                os.getenv("API_URL"), json={"user_id": user_id, "message": message.text}
             )
 
         if response.status_code == 200:
@@ -65,7 +65,9 @@ async def handle_message(message: types.Message):
             except ValueError:
                 full_reply = "❗️ Server noto‘g‘ri formatda javob qaytardi."
         elif response.status_code == 401:
-            full_reply = "❌ API token noto‘g‘ri yoki mavjud emas. Admin bilan bog‘laning."
+            full_reply = (
+                "❌ API token noto‘g‘ri yoki mavjud emas. Admin bilan bog‘laning."
+            )
         elif response.status_code == 429:
             full_reply = "🚫 Foydalanish limiti tugagan. Iltimos, biroz kutib qayta urinib ko‘ring yoki kredit to‘ldiring."
         else:
@@ -75,7 +77,28 @@ async def handle_message(message: types.Message):
         full_reply = f"❌ So‘rov vaqtida xatolik yuz berdi: {e}"
     except Exception as e:
         full_reply = f"❌ Noma’lum xatolik: {e}"
+    if "\n" in full_reply or len(full_reply.split()) > 200:
 
+        try:
+
+            await message.bot.edit_message_text(
+
+                chat_id=sent.chat.id,
+
+                message_id=sent.message_id,
+
+                text=full_reply,
+
+                parse_mode="Markdown"
+
+            )
+
+
+        except (TelegramRetryAfter, TelegramBadRequest):
+
+            pass
+
+        return
     sozlar = full_reply.split()
     soz_uzunligi = 10
     oxirgi_soz = ""
@@ -92,7 +115,7 @@ async def handle_message(message: types.Message):
                     chat_id=sent.chat.id,
                     message_id=sent.message_id,
                     text=oxirgi_soz.strip(),
-                    parse_mode=ParseMode.MARKDOWN
+                    parse_mode=ParseMode.MARKDOWN,
                 )
             except TelegramRetryAfter as e:
                 await asyncio.sleep(e.retry_after)
@@ -107,7 +130,7 @@ async def handle_message(message: types.Message):
                 chat_id=sent.chat.id,
                 message_id=sent.message_id,
                 text=full_reply,
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN,
             )
         except TelegramRetryAfter as e:
             await asyncio.sleep(e.retry_after)

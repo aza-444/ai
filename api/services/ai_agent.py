@@ -1,7 +1,8 @@
+import os
+
+from dotenv import load_dotenv
 from loguru import logger
 from openai import AsyncOpenAI
-from dotenv import load_dotenv
-import os
 
 from app.memory import session_memory
 
@@ -34,9 +35,7 @@ async def chat_with_ai_async(user_id: str, user_message: str) -> str:
         messages = session_memory.get(user_id)[-4:]
 
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.6
+            model="gpt-4o-mini", messages=messages, temperature=0.6
         )
 
         ai_reply = response.choices[0].message.content.strip()
