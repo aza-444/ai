@@ -2,9 +2,11 @@ name: Python application
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - "main"
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
 
 permissions:
   contents: read
@@ -40,12 +42,17 @@ jobs:
       - name: Test with pytest
         run: pytest
 
-      - name: Setup SSH key manually
+      - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          cat << 'EOF' > ~/.ssh/id_rsa
+          ${{ secrets.SERVER_SSH_KEY }}
+          EOF
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
+      - name: Test SSH connection (verbose)
+        run: ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP exit
+
       - name: Deploy to server
-        run: ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "bash deploy_script.sh"
+        run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "bash deploy_script.sh"
