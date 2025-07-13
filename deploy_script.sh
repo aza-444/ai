@@ -4,22 +4,20 @@ set -e
 APP_DIR=~/app
 REPO="aza-444/ai"
 
-# 1. Katalogni tayyorlash
 mkdir -p $APP_DIR
 cd $APP_DIR
 
-# 2. Git klonlash yoki pull qilish
-if [ ! -d ".git" ]; then
-  echo "ℹ️ .git mavjud emas, klon qilinmoqda..."
-  git clone https://github.com/$REPO .  # "." bu joriy papkaga klon qiladi
-else
-  echo "🔄 .git mavjud, kod yangilanmoqda..."
+if [ -d ".git" ]; then
+  echo "🔄 .git mavjud, yangilanmoqda..."
   git reset --hard
   git clean -fd
   git pull origin main
+else
+  echo "🧹 Katalog tozalanmoqda va klon qilinmoqda..."
+  rm -rf ./*
+  git clone https://github.com/$REPO .
 fi
 
-# 3. Virtual environment
 if [ ! -d "venv" ]; then
   python3 -m venv venv
 fi
@@ -27,10 +25,9 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 4. Systemd servislar
 sudo tee /etc/systemd/system/app.service > /dev/null << EOF
 [Unit]
-Description=App service
+Description=App Service
 After=network.target
 
 [Service]
@@ -45,7 +42,7 @@ EOF
 
 sudo tee /etc/systemd/system/bot.service > /dev/null << EOF
 [Unit]
-Description=Bot service
+Description=Bot Service
 After=network.target
 
 [Service]
@@ -58,7 +55,6 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-# 5. Servislarni yangilash va ishga tushirish
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable app.service
@@ -66,4 +62,4 @@ sudo systemctl enable bot.service
 sudo systemctl restart app.service
 sudo systemctl restart bot.service
 
-echo "✅ App va Bot servislar muvaffaqiyatli ishga tushdi."
+echo "✅ App va Bot servislar ishga tushdi."
