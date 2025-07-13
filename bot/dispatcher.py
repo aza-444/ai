@@ -39,6 +39,7 @@ async def on_shutdown(bot: Bot):
     await bot.session.close()
 
 
+
 async def handle_message(message: types.Message):
     logger.info(f"{message.from_user.id} -> {message.text}")
     user_id = str(message.from_user.id)
@@ -48,7 +49,6 @@ async def handle_message(message: types.Message):
         await message.reply("🚫 Sizga ruxsat yo‘q.")
         return
 
-    await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
     sent = await message.answer("🔄 Javob yozilmoqda...")
 
     try:
@@ -116,7 +116,6 @@ async def handle_message(message: types.Message):
             text=error_text,
             parse_mode=ParseMode.MARKDOWN,
         )
-
     except Exception as e:
         error_text = f"❌ Noma’lum xatolik: {e}"
         await message.bot.edit_message_text(
