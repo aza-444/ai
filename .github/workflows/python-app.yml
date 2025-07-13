@@ -17,6 +17,7 @@ jobs:
     env:
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # ✅ OpenAI API kaliti qo‘shildi
 
     steps:
     - uses: actions/checkout@v4
