@@ -53,4 +53,4 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
               $SERVER_USER@$SERVER_IP \
-              "bash /home/$SERVER_USER/projects/ai/deploy_script.sh"
+              "cd /home/$SERVER_USER/app && ./deploy_script.sh"
