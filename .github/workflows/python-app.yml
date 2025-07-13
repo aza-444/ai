@@ -2,9 +2,11 @@ name: Python application
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - "main"
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
 
 permissions:
   contents: read
@@ -48,4 +50,9 @@ jobs:
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
       - name: Deploy to server
-        run: ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "bash deploy_script.sh"
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "
+            cd /home/$SERVER_USER/app &&
+            chmod +x deploy_script.sh &&
+            ./deploy_script.sh
+          "
