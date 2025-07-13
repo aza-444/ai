@@ -50,6 +50,15 @@ jobs:
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
       - name: Deploy to server
-        run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-          $SERVER_USER@$SERVER_IP \
-          "mkdir -p ~/app && cd ~/app && git pull origin main && ./deploy_script.sh"
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
+          mkdir -p ~/app
+          cd ~/app
+          if [ ! -d ".git" ]; then
+            git clone https://github.com/${{ github.repository }} .
+          else
+            git pull origin main
+          fi
+          chmod +x ./deploy_script.sh
+          ./deploy_script.sh
+          EOF
