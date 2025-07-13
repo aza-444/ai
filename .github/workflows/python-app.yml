@@ -2,17 +2,15 @@ name: Python application
 
 on:
   push:
-    branches:
-      - "main"
+    branches: ["main"]
   pull_request:
-    branches:
-      - "main"
+    branches: ["main"]
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     env:
@@ -45,14 +43,19 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          cat << 'EOF' > ~/.ssh/id_rsa
-          ${{ secrets.SERVER_SSH_KEY }}
-          EOF
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
-      - name: Test SSH connection (verbose)
-        run: ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP exit
+      - name: Upload deploy script
+        run: |
+          cat <<EOF > deploy_script.sh
+          $(cat deploy_script.sh)
+          EOF
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deploy_script.sh $SERVER_USER@$SERVER_IP:~/app/deploy_script.sh
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "chmod +x ~/app/deploy_script.sh"
 
       - name: Deploy to server
-        run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "bash deploy_script.sh"
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP \
+          "REPO=${{ github.repository }} bash ~/app/deploy_script.sh"
