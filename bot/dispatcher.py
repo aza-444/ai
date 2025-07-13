@@ -10,13 +10,16 @@ from dotenv import load_dotenv
 from loguru import logger
 
 load_dotenv()
+
+logger.add("chat.log", rotation="1 day", retention="7 days", level="TRACE")
+
 dp = Dispatcher()
 
 
 async def start_hello(msg: Message, bot: Bot):
     await msg.answer(
         text=f"""
-Assalomu alaykum,<b>{msg.from_user.first_name}</b>! 😊
+Assalomu alaykum, <b>{msg.from_user.first_name}</b>! 😊
 O'zimni tanishtirishga ijozat bering:
 • Men sizning <b>topshiriq va savollaringizda</b> yordam berish uchun yaratilgan sun'iy idrokman 🤖
 • <b>Matn</b> bilan bog'liq har qanday topshiriqni bajara olaman 📝
@@ -36,15 +39,11 @@ async def on_shutdown(bot: Bot):
     await bot.session.close()
 
 
-logger.add("chat.log", rotation="1 day", retention="7 days", level="TRACE")
-
-
 async def handle_message(message: types.Message):
     logger.info(f"{message.from_user.id} -> {message.text}")
     user_id = str(message.from_user.id)
 
     allowed_users = os.getenv("ALLOWED_USERS", "")
-
     if user_id not in allowed_users:
         await message.reply("🚫 Sizga ruxsat yo‘q.")
         return
@@ -53,86 +52,76 @@ async def handle_message(message: types.Message):
     sent = await message.answer("🔄 Javob yozilmoqda...")
 
     try:
-        async with httpx.AsyncClient(timeout=600) as client:
-            response = await client.post(
-                os.getenv("API_URL"), json={"user_id": user_id, "message": message.text}
-            )
+        async with httpx.AsyncClient(timeout=None) as client:
+            async with client.stream(
+                "POST",
+                os.getenv("API_URL"),
+                json={"user_id": user_id, "message": message.text},
+            ) as response:
 
-        if response.status_code == 200:
-            try:
-                data = response.json()
-                full_reply = data.get("reply") or "⚠️ Javob mavjud emas."
-            except ValueError:
-                full_reply = "❗️ Server noto‘g‘ri formatda javob qaytardi."
-        elif response.status_code == 401:
-            full_reply = (
-                "❌ API token noto‘g‘ri yoki mavjud emas. Admin bilan bog‘laning."
-            )
-        elif response.status_code == 429:
-            full_reply = "🚫 Foydalanish limiti tugagan. Iltimos, biroz kutib qayta urinib ko‘ring yoki kredit to‘ldiring."
-        else:
-            full_reply = f"⚠️ Server xatoligi: {response.status_code}"
+                if response.status_code == 200:
+                    partial_text = ""
+                    async for line in response.aiter_lines():
+                        if not line.strip():
+                            continue
+                        partial_text += line + " "
+
+                        try:
+                            await message.bot.edit_message_text(
+                                chat_id=sent.chat.id,
+                                message_id=sent.message_id,
+                                text=partial_text.strip(),
+                                parse_mode=ParseMode.MARKDOWN,
+                            )
+                            await asyncio.sleep(1)
+                        except TelegramRetryAfter as e:
+                            await asyncio.sleep(e.retry_after)
+                        except TelegramBadRequest:
+                            continue
+
+                elif response.status_code == 401:
+                    error_text = "❌ API token noto‘g‘ri yoki mavjud emas. Admin bilan bog‘laning."
+                    await message.bot.edit_message_text(
+                        chat_id=sent.chat.id,
+                        message_id=sent.message_id,
+                        text=error_text,
+                        parse_mode=ParseMode.MARKDOWN,
+                    )
+
+                elif response.status_code == 429:
+                    error_text = (
+                        "🚫 Limit tugagan. Iltimos, kuting yoki kredit to‘ldiring."
+                    )
+                    await message.bot.edit_message_text(
+                        chat_id=sent.chat.id,
+                        message_id=sent.message_id,
+                        text=error_text,
+                        parse_mode=ParseMode.MARKDOWN,
+                    )
+
+                else:
+                    error_text = f"⚠️ Server xatoligi: {response.status_code}"
+                    await message.bot.edit_message_text(
+                        chat_id=sent.chat.id,
+                        message_id=sent.message_id,
+                        text=error_text,
+                        parse_mode=ParseMode.MARKDOWN,
+                    )
 
     except httpx.HTTPError as e:
-        full_reply = f"❌ So‘rov vaqtida xatolik yuz berdi: {e}"
+        error_text = f"❌ HTTP xatosi: {e}"
+        await message.bot.edit_message_text(
+            chat_id=sent.chat.id,
+            message_id=sent.message_id,
+            text=error_text,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+
     except Exception as e:
-        full_reply = f"❌ Noma’lum xatolik: {e}"
-    if "\n" in full_reply or len(full_reply.split()) > 200:
-
-        try:
-
-            await message.bot.edit_message_text(
-
-                chat_id=sent.chat.id,
-
-                message_id=sent.message_id,
-
-                text=full_reply,
-
-                parse_mode="Markdown"
-
-            )
-
-
-        except (TelegramRetryAfter, TelegramBadRequest):
-
-            pass
-
-        return
-    sozlar = full_reply.split()
-    soz_uzunligi = 10
-    oxirgi_soz = ""
-    chashka = []
-
-    for i, word in enumerate(sozlar, start=1):
-        chashka.append(word)
-        if i % soz_uzunligi == 0 or i == len(sozlar):
-            candidate = " ".join(chashka)
-            oxirgi_soz += candidate + " "
-            try:
-                await asyncio.sleep(0.1)
-                await message.bot.edit_message_text(
-                    chat_id=sent.chat.id,
-                    message_id=sent.message_id,
-                    text=oxirgi_soz.strip(),
-                    parse_mode=ParseMode.MARKDOWN,
-                )
-            except TelegramRetryAfter as e:
-                await asyncio.sleep(e.retry_after)
-            except TelegramBadRequest:
-                pass
-            chashka = []
-
-    if oxirgi_soz.strip() != full_reply.strip():
-        try:
-            await asyncio.sleep(0.1)
-            await message.bot.edit_message_text(
-                chat_id=sent.chat.id,
-                message_id=sent.message_id,
-                text=full_reply,
-                parse_mode=ParseMode.MARKDOWN,
-            )
-        except TelegramRetryAfter as e:
-            await asyncio.sleep(e.retry_after)
-        except TelegramBadRequest:
-            pass
+        error_text = f"❌ Noma’lum xatolik: {e}"
+        await message.bot.edit_message_text(
+            chat_id=sent.chat.id,
+            message_id=sent.message_id,
+            text=error_text,
+            parse_mode=ParseMode.MARKDOWN,
+        )

@@ -1,4 +1,6 @@
+import asyncio
 import os
+from typing import AsyncGenerator
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -29,20 +31,26 @@ load_dotenv()
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-async def chat_with_ai_async(user_id: str, user_message: str) -> str:
+async def generate_reply_stream(
+    user_id: str, user_message: str
+) -> AsyncGenerator[str, None]:
     try:
         session_memory.add(user_id, "user", user_message)
         messages = session_memory.get(user_id)[-4:]
 
         response = await client.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, temperature=0.6
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.6,
+            stream=True,
         )
 
-        ai_reply = response.choices[0].message.content.strip()
-        session_memory.add(user_id, "assistant", ai_reply)
-        print(ai_reply)
-        return ai_reply
+        async for chunk in response:
+            if chunk.choices[0].delta.content:
+                content_piece = chunk.choices[0].delta.content
+                yield content_piece
+                await asyncio.sleep(0.05)
 
     except Exception as e:
         logger.info(f"{user_id} uchun yuborilayotgan messages: {messages}")
-        return f"❌ Xatolik yuz berdi: {str(e)}"
+        yield f"❌ Xatolik yuz berdi: {str(e)}"

@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
+from starlette.responses import StreamingResponse
 
-from api.services.ai_agent import  chat_with_ai_async
+from api.services.ai_agent import generate_reply_stream
 from app.memory import session_memory
 
 app = FastAPI()
@@ -12,10 +13,11 @@ class MessageIn(BaseModel):
     message: str
 
 
-@app.post("/chat")
-async def chat(msg: MessageIn):
-    response = await chat_with_ai_async(msg.user_id, msg.message)
-    return {"reply": response}
+@app.post("/chat-stream")
+async def chat_stream(msg: MessageIn):
+    return StreamingResponse(
+        generate_reply_stream(msg.user_id, msg.message), media_type="text/plain"
+    )
 
 
 @app.post("/reset")
