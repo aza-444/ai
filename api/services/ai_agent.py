@@ -31,10 +31,7 @@ load_dotenv()
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-
-async def generate_reply_stream(
-    user_id: str, user_message: str
-) -> AsyncGenerator[str, None]:
+async def generate_reply_stream(user_id: str, user_message: str) -> AsyncGenerator[str, None]:
     try:
         session_memory.add(user_id, "user", user_message)
         messages = session_memory.get(user_id)[-4:]
