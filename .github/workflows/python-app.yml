@@ -11,13 +11,12 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     env:
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # OpenAI API kaliti qo‘shildi
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -39,13 +38,12 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest
-        run: |
-          pytest
+        run: pytest
 
-      - name: Setup SSH key
+      - name: Setup SSH key manually
         run: |
           mkdir -p ~/.ssh
-          echo -e "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
