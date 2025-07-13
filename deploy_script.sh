@@ -17,7 +17,16 @@ else
   git pull origin main
 fi
 
+if ! command -v python3 &> /dev/null; then
+  echo "❌ python3 topilmadi. Iltimos, uni o'rnating."
+  exit 1
+fi
+
 if [ ! -d "venv" ]; then
+  echo "📦 python3-venv tekshirilmoqda..."
+  sudo apt-get update
+  sudo apt-get install -y python3-venv
+
   echo "🐍 Virtual muhit yaratilmoqda..."
   python3 -m venv venv
 fi
