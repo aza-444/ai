@@ -51,8 +51,6 @@ jobs:
 
       - name: Deploy to server
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "
-            cd /home/$SERVER_USER/app &&
-            chmod +x deploy_script.sh &&
-            ./deploy_script.sh
-          "
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+                $SERVER_USER@$SERVER_IP \
+                "cd /home/$SERVER_USER/app && chmod +x deploy_script.sh && ./deploy_script.sh"
