@@ -39,3 +39,29 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: pytest
+stages:
+  - deploy
+
+deploy_job:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_USERNAME: $DOCKER_USERNAME
+    DOCKER_PASSWORD: $DOCKER_PASSWORD
+    OPENAI_API_KEY: $OPENAI_API_KEY
+    SERVER_IP: $SERVER_IP
+    SERVER_SSH_KEY: $SERVER_SSH_KEY
+    SERVER_USER: $SERVER_USER
+  script:
+    - echo "Deploy jarayoni boshlandi..."
+
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - export OPENAI_API_KEY=$OPENAI_API_KEY
+    - mkdir -p ~/.ssh
+    - echo "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "bash deploy_script.sh"
+  only:
+    - main
