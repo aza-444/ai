@@ -2,19 +2,24 @@
 set -e
 
 APP_DIR=~/app
+REPO="aza-444/ai"
 
-# Katalogga kirish yoki yaratish
+# 1. Katalogni tayyorlash
 mkdir -p $APP_DIR
 cd $APP_DIR
 
-# Git klonlash yoki yangilash
+# 2. Git klonlash yoki pull qilish
 if [ ! -d ".git" ]; then
-  git clone https://github.com/${REPO}.git .
+  echo "ℹ️ .git mavjud emas, klon qilinmoqda..."
+  git clone https://github.com/$REPO .  # "." bu joriy papkaga klon qiladi
 else
+  echo "🔄 .git mavjud, kod yangilanmoqda..."
+  git reset --hard
+  git clean -fd
   git pull origin main
 fi
 
-# Virtual environment yaratish
+# 3. Virtual environment
 if [ ! -d "venv" ]; then
   python3 -m venv venv
 fi
@@ -22,10 +27,10 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# ======== APP SERVICE =========
+# 4. Systemd servislar
 sudo tee /etc/systemd/system/app.service > /dev/null << EOF
 [Unit]
-Description=Python App Service
+Description=App service
 After=network.target
 
 [Service]
@@ -38,10 +43,9 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-# ======== BOT SERVICE =========
 sudo tee /etc/systemd/system/bot.service > /dev/null << EOF
 [Unit]
-Description=Python Bot Service
+Description=Bot service
 After=network.target
 
 [Service]
@@ -54,7 +58,7 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-# Servislarni yangilash va ishga tushirish
+# 5. Servislarni yangilash va ishga tushirish
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable app.service
