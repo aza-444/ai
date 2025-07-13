@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-APP_DIR=~/app
+APP_DIR=$(realpath ~/app)
 REPO="aza-444/ai"
+USER_NAME=$(whoami)
 
 mkdir -p $APP_DIR
 cd $APP_DIR
@@ -21,9 +22,11 @@ fi
 if [ ! -d "venv" ]; then
   python3 -m venv venv
 fi
+
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+
 
 sudo tee /etc/systemd/system/app.service > /dev/null << EOF
 [Unit]
@@ -31,9 +34,9 @@ Description=App Service
 After=network.target
 
 [Service]
-User=$USER
+User=$USER_NAME
 WorkingDirectory=$APP_DIR
-ExecStart=$APP_DIR/venv/bin/python app/main.py
+ExecStart=$APP_DIR/venv/bin/python app/app/main.py
 Restart=always
 
 [Install]
@@ -46,7 +49,7 @@ Description=Bot Service
 After=network.target
 
 [Service]
-User=$USER
+User=$USER_NAME
 WorkingDirectory=$APP_DIR
 ExecStart=$APP_DIR/venv/bin/python bot/main.py
 Restart=always
@@ -55,7 +58,6 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl enable app.service
 sudo systemctl enable bot.service
