@@ -14,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      API_URL: ${{secrets.API_URL }}
+      USER_ID: ${{secrets.USER_ID }}
+      ALLOWED_USERS: ${{secrets.ALLOWED_USERS }}
+      TOKEN: ${{secrets.TOKEN }}
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
