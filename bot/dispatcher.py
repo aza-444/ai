@@ -39,7 +39,6 @@ async def on_shutdown(bot: Bot):
     await bot.session.close()
 
 
-
 async def handle_message(message: types.Message):
     logger.info(f"{message.from_user.id} -> {message.text}")
     user_id = str(message.from_user.id)
@@ -54,9 +53,9 @@ async def handle_message(message: types.Message):
     try:
         async with httpx.AsyncClient(timeout=None) as client:
             async with client.stream(
-                "POST",
-                os.getenv("API_URL"),
-                json={"user_id": user_id, "message": message.text},
+                    "POST",
+                    os.getenv("API_URL"),
+                    json={"user_id": user_id, "message": message.text},
             ) as response:
 
                 if response.status_code == 200:
@@ -98,6 +97,7 @@ async def handle_message(message: types.Message):
                         text=error_text,
                         parse_mode=ParseMode.MARKDOWN,
                     )
+
 
                 else:
                     error_text = f"⚠️ Server xatoligi: {response.status_code}"

@@ -19,6 +19,7 @@ async def chat_stream(msg: MessageIn):
         generate_reply_stream(msg.user_id, msg.message), media_type="text/plain"
     )
 
+
 @app.post("/reset")
 def reset(msg: MessageIn):
     session_memory.clear(msg.user_id)
