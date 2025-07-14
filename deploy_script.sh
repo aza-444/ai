@@ -28,36 +28,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 
-sudo tee /etc/systemd/system/app.service > /dev/null << EOF
-[Unit]
-Description=App Service
-After=network.target
-
-[Service]
-User=$USER_NAME
-WorkingDirectory=$APP_DIR
-ExecStart=$APP_DIR/venv/bin/python app/app/main.py
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo tee /etc/systemd/system/bot.service > /dev/null << EOF
-[Unit]
-Description=Bot Service
-After=network.target
-
-[Service]
-User=$USER_NAME
-WorkingDirectory=$APP_DIR
-ExecStart=$APP_DIR/venv/bin/python bot/main.py
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
 sudo systemctl daemon-reload
 sudo systemctl enable app.service
 sudo systemctl enable bot.service
