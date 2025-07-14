@@ -18,11 +18,11 @@ else
   rm -rf ./*
   git clone https://github.com/$REPO .
 fi
-
-if [ ! -d "venv" ]; then
-  python3 -m venv venv
-fi
-
+#
+#if [ ! -d "venv" ]; then
+#  python3 -m venv venv
+#fi
+python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
