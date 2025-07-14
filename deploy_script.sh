@@ -15,6 +15,8 @@ if [ -d ".git" ]; then
   git pull origin main
 else
   echo "🧹 Katalog tozalanmoqda va klon qilinmoqda..."
+  echo "🧹 Katalog tozalanmoqda..."
+  rm -rf *
   git clone https://github.com/$REPO .
 fi
 #
